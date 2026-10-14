@@ -33,7 +33,6 @@ main.json
 .playwright-mcp/
 _weblogs/
 *.log
-/docs-pagination.png
 
 # Local presentation: review content and rights before explicitly publishing
 /docs/iManage-AI-Workspace.pptx

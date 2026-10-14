@@ -17,7 +17,8 @@ policies at a real iManage tenant and the real **iManage Work MCP Server**.
 > APIM; identity, OAuth, hosted-agent configuration, and model gateway governance need separate
 > setup and verification. Local mock mode has no Entra sign-in or real access controls. A
 > fully private, VNet‑isolated posture (private endpoints, VPN, NAT egress, per‑user token
-> forwarding over a private MCP path) is the documented Sprint 2 target. See [`docs/product-spec.md`](docs/product-spec.md).
+> forwarding over a private MCP path) is described in [`docs/product-spec.md`](docs/product-spec.md)
+> but is not implemented by the current deployment stamp.
 
 ---
 
@@ -34,6 +35,13 @@ policies at a real iManage tenant and the real **iManage Work MCP Server**.
 
 The front end is a **React/Vite** SPA with a modern, task‑oriented UX (deliberately *not* an
 iManage‑UI clone).
+
+## Frontend preview
+
+Demo-mode frontend showing search, library filters, document pagination, and the Ask AI panel
+with synthetic data.
+
+![iManage AI Workspace frontend with search, document results, and the Ask AI panel](docs-pagination.png)
 
 ---
 
@@ -258,8 +266,8 @@ iManage product.
 
 Publish source through Git, **not a ZIP of this working folder**. `.gitignore` excludes local
 Azure state, `.env` variants, virtual environments, dependencies, generated frontend bundles,
-browser captures, and diagnostic logs. The local presentation and root demo screenshot are also
-excluded pending content/rights review; they have not been deleted.
+browser captures, and diagnostic logs. The local presentation remains excluded pending
+content/rights review; it has not been deleted.
 
 Before the first public push, inspect `git status --short` and `git diff --cached`, run secret
 scanning on the staged files, and review the remaining docs/assets for confidential content and
