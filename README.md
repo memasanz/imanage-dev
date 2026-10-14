@@ -43,6 +43,17 @@ with synthetic data.
 
 ![iManage AI Workspace frontend with search, document results, and the Ask AI panel](docs-pagination.png)
 
+## Mock backend API preview
+
+Swagger UI for the bundled mock iManage upstream, showing health and Work REST endpoints.
+Explore the API locally at http://localhost:8080/docs.
+
+![Mock iManage upstream Swagger UI showing health and Work REST endpoints](docs-mock-backend.png)
+
+The mock also exposes the MCP JSON-RPC endpoint at `POST /mcp`, shown below with its request schema.
+
+![Mock iManage MCP endpoint and JSON-RPC request schema in Swagger UI](docs-mock-mcp.png)
+
 ---
 
 ## Architecture
