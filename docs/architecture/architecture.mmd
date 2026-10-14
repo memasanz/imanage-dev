@@ -1,0 +1,41 @@
+%% iManage AI Workspace — open-network, per-customer stamp
+%% Render on GitHub or with the Mermaid CLI/VS Code Mermaid preview.
+flowchart LR
+    user["End user<br/>(browser)"]
+    imanageAuth["iManage authorize<br/>(cloudimanage.com, public)"]
+
+    user -- "interactive OAuth login / MFA (public)" --> imanageAuth
+
+    subgraph STAMP["Per-customer stamp (public networking)"]
+        direction LR
+        app["App Service (P1v3)<br/>FastAPI proxy + React SPA<br/>agent bridge (no agent logic)<br/>Entra ID sign-in (EasyAuth)"]
+
+        apim["API Management Standard v2<br/>public gateway<br/><br/>Routes: /models /agents<br/>/imanage/work /imanage/mcp /imanage/oauth"]
+
+        foundry["Azure AI Foundry<br/>Hosted agent (Agent Framework, new agents/Responses API, gpt-5.6-sol)<br/>+ model deployments<br/>model governed by Foundry AI Gateway → APIM"]
+        mcphop["iManage MCP tool<br/>(Streamable HTTP)"]
+
+        obs["Log Analytics + App Insights<br/>per-operation telemetry"]
+    end
+
+    imanageWork["iManage Work REST API<br/>(classic /work/api/v2)"]
+    imanageMcp["iManage MCP<br/>(/mcp search + fetch)"]
+    imanageToken["iManage token endpoint<br/>(server-to-server)"]
+
+    user -- "HTTPS + Entra sign-in" --> app
+
+    app -- "data calls (bearer attached)" --> apim
+    app -- "agent turn + OBO token" --> apim
+    app -- "token exchange / refresh" --> apim
+
+    apim -- "/models /agents" --> foundry
+    foundry -- "MCP tool (Streamable HTTP)" --> mcphop
+    mcphop -- "/imanage/mcp" --> apim
+
+    apim -- "/imanage/work" --> imanageWork
+    apim -- "/imanage/mcp" --> imanageMcp
+    apim -- "/imanage/oauth/token" --> imanageToken
+
+    app -. "diagnostics" .-> obs
+    apim -. "diagnostics" .-> obs
+    foundry -. "diagnostics" .-> obs

@@ -1,0 +1,43 @@
+{
+  "$comment": "Tenant/experience configuration that drives what the SPA shows. Kept outside ./infra so it is easy to find and edit. The infra reads this file and projects these values onto the web App Service application settings. See ./config/TODO.md for the wiring task. NOTE: the backend mode (mock vs real iManage) is NOT set here — it is driven by the azd `IMANAGE_BACKEND_MODE` env / Bicep param so there is a single source of truth.",
+
+  "imanageCustomerId": "1",
+
+  "imanageLibraries": ["ACTIVE_US", "ARCHIVE_US", "EU_WORK"],
+
+  "$fieldMapComment": "Each entry maps one neutral SPA field to an iManage profile field (code + *_description pair). 'source' is the raw iManage column; the backend reads <source> for the id and <source>_description for the label. These match the mock dataset in src/mock_upstream/app/data.py (custom1=client, custom2=matter, custom3=practice area, custom4=jurisdiction).",
+  "fieldMap": [
+    {
+      "key": "client",
+      "source": "custom1",
+      "label": "Client",
+      "searchable": true,
+      "filterable": true,
+      "show_in_detail": true
+    },
+    {
+      "key": "matter",
+      "source": "custom2",
+      "label": "Matter",
+      "searchable": true,
+      "filterable": true,
+      "show_in_detail": true
+    },
+    {
+      "key": "practice_area",
+      "source": "custom3",
+      "label": "Practice Area",
+      "searchable": false,
+      "filterable": true,
+      "show_in_detail": true
+    },
+    {
+      "key": "jurisdiction",
+      "source": "custom4",
+      "label": "Jurisdiction",
+      "searchable": false,
+      "filterable": true,
+      "show_in_detail": true
+    }
+  ]
+}

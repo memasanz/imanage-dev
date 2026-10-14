@@ -1,0 +1,92 @@
+<!--
+  iManage Work + MCP APIs.
+  Subscription key, caller-bearer passthrough (APIM does NOT mint iManage tokens),
+  per-operation logging so every upstream iManage call is individually visible,
+  retry/timeout, and NAT-pinned egress. See ../README.md §3.3.
+
+  Backend is a SWAPPABLE APIM backend entity selected by imanageBackendMode (mock|live):
+    imanage-work-backend -> mock upstream (PE)  | {tenant}.cloudimanage.com/work/api/v2 (NAT)
+    imanage-mcp-backend  -> mock upstream (PE)  | {tenant}.cloudimanage.com/mcp          (NAT)
+
+  Named Work operations (all GET) — one APIM operation each so metrics/logs are per-call:
+    documents-list | documents-list-scoped | documents-recent | documents-checkedout |
+    documents-favorites | document-get | document-versions | document-text |
+    document-download | workspaces-search | workspaces-recent | workspace-documents |
+    workspace-children | folders-search | folder-children | clients-search |
+    users-search | user-profile | libraries
+  Logical MCP operations (all POST, one JSON-RPC endpoint):
+    initialize | list-tools | search | fetch | call-tool
+-->
+<policies>
+  <inbound>
+    <base /> <!-- global.xml: correlation id, CORS, header scrub, per-operation request metric -->
+
+    <!-- APIM authenticates to the backend with its subscription key (not an iManage token). -->
+    <set-header name="Ocp-Apim-Subscription-Key" exists-action="override">
+      <value>{{imanage-subscription-key}}</value>
+    </set-header>
+
+    <!--
+      Forward the CALLER'S iManage bearer unchanged (per-user identity / OBO):
+        Work : X-Auth-Token
+        MCP  : Authorization: Bearer
+      APIM never mints or rewrites these. If absent, fail closed.
+    -->
+    <choose>
+      <when condition="@(context.Api.Id == "imanage-work" && !context.Request.Headers.ContainsKey("X-Auth-Token"))">
+        <return-response>
+          <set-status code="401" reason="Missing iManage token" />
+        </return-response>
+      </when>
+      <when condition="@(context.Api.Id == "imanage-mcp" && !context.Request.Headers.ContainsKey("Authorization"))">
+        <return-response>
+          <set-status code="401" reason="Missing iManage token" />
+        </return-response>
+      </when>
+    </choose>
+
+    <!-- Backend is set per-API via the API serviceUrl (mock vs live selected in IaC). -->
+    <choose>
+      <when condition="@(context.Api.Id == "imanage-mcp")">
+        <!-- MCP: carry the session id forward on every call after initialize. -->
+        <set-header name="Mcp-Session-Id" exists-action="skip">
+          <value>@(context.Request.Headers.GetValueOrDefault("Mcp-Session-Id",""))</value>
+        </set-header>
+      </when>
+    </choose>
+  </inbound>
+
+  <backend>
+    <!-- Retry transient iManage failures with capped exponential backoff. -->
+    <retry condition="@(context.Response.StatusCode == 429 || context.Response.StatusCode >= 500)"
+           count="3" interval="1" max-interval="8" delta="2" first-fast-retry="false">
+      <forward-request timeout="60" />
+    </retry>
+  </backend>
+
+  <outbound>
+    <base /> <!-- global.xml strips Authorization / X-Auth-Token before responding or logging -->
+
+    <!--
+      MCP establishes a session via a 3xx redirect to a per-session location URL on initialize.
+      Surface Mcp-Session-Id back to the proxy so it can thread subsequent calls.
+    -->
+    <choose>
+      <when condition="@(context.Api.Id == "imanage-mcp" && context.Response.Headers.ContainsKey("Mcp-Session-Id"))">
+        <set-header name="Mcp-Session-Id" exists-action="override">
+          <value>@(context.Response.Headers.GetValueOrDefault("Mcp-Session-Id",""))</value>
+        </set-header>
+      </when>
+    </choose>
+
+    <!--
+      Fine-grained visibility: per-operation request metrics are emitted in global.xml and APIM
+      diagnostics stream per-call logs (api, operation, status, latency) to Log Analytics /
+      Application Insights. Token material is scrubbed by global.xml before any logging.
+    -->
+  </outbound>
+
+  <on-error>
+    <base />
+  </on-error>
+</policies>

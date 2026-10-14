@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" modified="2026-10-02T00:00:00.000Z" agent="copilot-cli" version="24.0.0">
+  <diagram id="imanage-ai-open" name="iManage AI Workspace (Open-Network)">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="user" value="End user (browser)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="imanageAuth" value="iManage authorize&#10;(cloudimanage.com, public)&#10;interactive login / MFA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="stamp" value="Per-customer stamp (public networking)" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="60" width="900" height="760" as="geometry" />
+        </mxCell>
+
+        <mxCell id="app" value="App Service (P1v3)&#10;FastAPI proxy + React SPA&#10;agent bridge (no agent logic)&#10;Entra ID sign-in (EasyAuth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="520" y="390" width="210" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apim" value="API Management Standard v2&#10;public gateway&#10;Routes: /models /agents&#10;/imanage/work /imanage/mcp /imanage/oauth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="780" y="380" width="240" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="foundry" value="Azure AI Foundry&#10;Hosted agent (Agent Framework, gpt-5.6-sol)&#10;+ model deployments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="780" y="120" width="240" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mcp" value="iManage MCP tool&#10;(Streamable HTTP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="130" width="100" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="obs" value="Log Analytics + App Insights&#10;per-operation telemetry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="320" y="700" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="imWork" value="iManage Work REST API&#10;(classic /work/api/v2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="520" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="imMcp" value="iManage MCP&#10;(/mcp search + fetch)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="600" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="imToken" value="iManage token endpoint&#10;(server-to-server)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="680" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_user_auth" value="OAuth login / MFA (public)" style="endArrow=block;html=1;strokeColor=#d79b00;dashed=1;" edge="1" parent="1" source="user" target="imanageAuth"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_user_app" value="HTTPS + Entra sign-in" style="endArrow=block;html=1;" edge="1" parent="1" source="user" target="app"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_app_apim" value="data + agent turn (+OBO) + token exchange" style="endArrow=block;html=1;" edge="1" parent="1" source="app" target="apim"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_apim_foundry" value="/models /agents" style="endArrow=block;html=1;" edge="1" parent="1" source="apim" target="foundry"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_foundry_mcp" value="MCP tool" style="endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="foundry" target="mcp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_mcp_apim" value="/imanage/mcp" style="endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="mcp" target="apim"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_apim_work" value="/imanage/work" style="endArrow=block;html=1;" edge="1" parent="1" source="apim" target="imWork"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_apim_mcp" value="/imanage/mcp" style="endArrow=block;html=1;" edge="1" parent="1" source="apim" target="imMcp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_apim_token" value="/imanage/oauth/token" style="endArrow=block;html=1;" edge="1" parent="1" source="apim" target="imToken"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_app_obs" style="endArrow=block;html=1;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="app" target="obs"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_apim_obs" style="endArrow=block;html=1;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="apim" target="obs"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

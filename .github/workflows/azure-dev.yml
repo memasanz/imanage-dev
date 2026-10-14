@@ -1,0 +1,65 @@
+name: Deploy iManage AI Workspace (azd)
+
+# CI/CD for the open-network stamp. `provision` creates/updates infra; `deploy`
+# pushes backend + SPA code. The web app + APIM are publicly reachable, so both jobs
+# run on standard GitHub-hosted runners.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Which azd phase to run
+        type: choice
+        default: provision
+        options:
+          - provision
+          - deploy
+          - up
+
+permissions:
+  id-token: write   # OIDC federated login (no stored client secret)
+  contents: read
+
+env:
+  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.action == 'provision' || inputs.action == 'up' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+      - name: Log in with azd (OIDC)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      - name: Provision infrastructure
+        run: azd provision --no-prompt
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.action == 'deploy' || inputs.action == 'up' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+      - name: Log in with azd (OIDC)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      - name: Deploy application code
+        run: azd deploy --no-prompt

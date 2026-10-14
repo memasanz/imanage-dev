@@ -1,0 +1,78 @@
+<!--
+  iManage OAuth API — server-to-server token exchange only.
+  (Interactive authorize stays browser -> iManage direct; it does NOT traverse APIM.)
+  Injects the client secret from a Key Vault-backed named value, enforces a redirect_uri
+  allow-list, and logs issuance EVENTS ONLY (never token material). See ../README.md §3.4.
+
+  Operations (Work and MCP have separate token hosts/clients):
+    work-token            POST  authorization_code exchange (PKCE)            -> Work auth host
+    work-refresh          POST  grant_type=refresh_token                      -> Work auth host
+    mcp-token             POST  authorization_code exchange (PKCE + resource) -> MCP auth host
+    mcp-resource-metadata GET   /.well-known/oauth-protected-resource/...     -> MCP host (no secret)
+-->
+<policies>
+  <inbound>
+    <base /> <!-- global.xml: correlation id, CORS, header scrub -->
+
+    <!-- Egress pinned to NAT; backend base per operation (Work vs MCP token host). -->
+    <choose>
+      <when condition="@(context.Operation.Name == "work-token" || context.Operation.Name == "work-refresh")">
+        <set-backend-service base-url="{{imanage-work-auth-base-url}}" />
+      </when>
+      <otherwise>
+        <set-backend-service base-url="{{imanage-mcp-auth-base-url}}" />
+      </otherwise>
+    </choose>
+
+    <!-- Validate redirect_uri against the allow-list (token/exchange operations only). -->
+    <choose>
+      <when condition="@(context.Operation.Name == "work-token" || context.Operation.Name == "mcp-token")">
+        <set-variable name="redirectUri" value="@{
+          try {
+            var form = context.Request.Body.As<string>(preserveContent: true);
+            var m = System.Text.RegularExpressions.Regex.Match(form, "redirect_uri=([^&]*)");
+            return m.Success ? Uri.UnescapeDataString(m.Groups[1].Value) : "";
+          } catch { return ""; }
+        }" />
+        <choose>
+          <when condition="@(!"{{redirect-uri-allowlist}}".Split(',').Contains((string)context.Variables["redirectUri"]))">
+            <return-response>
+              <set-status code="400" reason="redirect_uri not allowed" />
+            </return-response>
+          </when>
+        </choose>
+      </when>
+    </choose>
+
+    <!--
+      Inject the client secret server-side (from Key Vault named value). The browser/proxy never
+      sees it. Appended to the form body for the token exchange.
+    -->
+    <choose>
+      <when condition="@(context.Operation.Name == "work-token" || context.Operation.Name == "work-refresh")">
+        <set-body>@($"{context.Request.Body.As<string>(preserveContent: true)}&client_secret={{work-client-secret}}")</set-body>
+      </when>
+      <when condition="@(context.Operation.Name == "mcp-token")">
+        <set-body>@($"{context.Request.Body.As<string>(preserveContent: true)}&client_secret={{mcp-client-secret}}")</set-body>
+      </when>
+    </choose>
+  </inbound>
+
+  <backend>
+    <forward-request timeout="30" />
+  </backend>
+
+  <outbound>
+    <base />
+
+    <!--
+      Issuance EVENTS (subject/client_id/status) are captured via APIM diagnostics to Log
+      Analytics / Application Insights — NEVER the access/refresh token. The response body
+      (which contains tokens) is not logged.
+    -->
+  </outbound>
+
+  <on-error>
+    <base />
+  </on-error>
+</policies>

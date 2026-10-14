@@ -1,0 +1,56 @@
+<!--
+  Global policy — applies to ALL APIs (service or product scope).
+  Correlation id, CORS (same-origin private host), custom metrics, header scrubbing.
+  See ../README.md §3.1.
+-->
+<policies>
+  <inbound>
+    <!-- Correlation id: reuse inbound if present, else generate; propagate downstream. -->
+    <choose>
+      <when condition="@(!context.Request.Headers.ContainsKey("x-correlation-id"))">
+        <set-header name="x-correlation-id" exists-action="skip">
+          <value>@(Guid.NewGuid().ToString())</value>
+        </set-header>
+      </when>
+    </choose>
+
+    <!-- Same-origin only: the private App Service SPA host. -->
+    <cors allow-credentials="true">
+      <allowed-origins>
+        <origin>{{spa-origin}}</origin>
+      </allowed-origins>
+      <allowed-methods>
+        <method>GET</method>
+        <method>POST</method>
+        <method>OPTIONS</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>*</header>
+      </allowed-headers>
+    </cors>
+
+    <!-- Fine-grained telemetry: one metric per API/operation/status (+ library when present). -->
+    <emit-metric name="apim-request" value="1" namespace="imanage-ai">
+      <dimension name="api" value="@(context.Api.Name)" />
+      <dimension name="operation" value="@(context.Operation.Name)" />
+      <dimension name="status" value="@(context.Response.StatusCode.ToString())" />
+      <dimension name="library" value="@(context.Request.Url.Query.GetValueOrDefault("libraries","-"))" />
+    </emit-metric>
+  </inbound>
+
+  <backend>
+    <forward-request />
+  </backend>
+
+  <outbound>
+    <!-- Strip hop-by-hop / sensitive headers before responding or logging. -->
+    <set-header name="X-Auth-Token" exists-action="delete" />
+    <set-header name="Authorization" exists-action="delete" />
+    <set-header name="Ocp-Apim-Subscription-Key" exists-action="delete" />
+    <set-header name="x-correlation-id" exists-action="override">
+      <value>@(context.Request.Headers.GetValueOrDefault("x-correlation-id","-"))</value>
+    </set-header>
+  </outbound>
+
+  <on-error />
+</policies>

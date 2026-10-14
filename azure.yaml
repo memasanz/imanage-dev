@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: imanage-ai-workspace
+metadata:
+    template: imanage-ai-workspace@0.1.0
+services:
+    mock:
+        project: ./src/mock_upstream
+        host: appservice
+        language: python
+    web:
+        project: ./src/backend
+        host: appservice
+        language: python
+infra:
+    provider: microsoft.foundry
+    module: main
+hooks:
+    prepackage:
+        windows:
+            shell: pwsh
+            run: ./infra/hooks/prepackage.ps1
+        posix:
+            shell: sh
+            run: ./infra/hooks/prepackage.sh
+    preprovision:
+        windows:
+            shell: pwsh
+            run: ./infra/hooks/preprovision.ps1
+        posix:
+            shell: sh
+            run: ./infra/hooks/preprovision.sh

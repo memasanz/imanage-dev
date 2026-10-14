@@ -1,0 +1,57 @@
+<!--
+  Models + Agents APIs (Foundry, private).
+
+  BASELINE: this API is created via the Foundry <-> APIM AI Gateway integration
+  (APIM "Import Azure AI Foundry"), which provisions the backend(s), managed-identity auth,
+  and the recommended GenAI policies:
+      - azure-openai-token-limit / llm-token-limit             (token rate + quota)
+      - azure-openai-emit-token-metric / llm-emit-token-metric (token usage metrics)
+      - backend pool load-balancing + circuit breaker
+      - optional AI content-safety hook
+  SEMANTIC CACHING IS NOT USED for this solution (llm-semantic-cache-* intentionally omitted).
+
+  The XML below is the DELTA we layer on top of the generated AI Gateway policy — correlation id,
+  our custom metric dimensions, and the agent run-turn OBO/no-log-body rule. Keep the generated
+  token-limit / token-metric / load-balancer sections; do not replace them with hand-rolled guards.
+  See ../README.md §3.2.
+
+  Operations (each a named APIM operation so calls are individually visible):
+    Models  (/models):  chat-completions | responses | embeddings
+    Agents  (/agents):  create-thread | run-turn | get-run | list-messages
+-->
+<policies>
+  <inbound>
+    <base /> <!-- global.xml (correlation id, CORS, header scrub) + generated AI Gateway inbound:
+                  managed-identity auth, token-limit. DO NOT re-implement those here. -->
+
+    <!-- Delta: tag model/agent calls with our dimensions for per-operation dashboards. -->
+    <emit-metric name="model-request" value="1" namespace="imanage-ai">
+      <dimension name="api" value="@(context.Api.Name)" />
+      <dimension name="operation" value="@(context.Operation.Name)" />
+      <dimension name="deployment" value="@(context.Request.MatchedParameters.GetValueOrDefault("deployment","-"))" />
+    </emit-metric>
+
+    <!--
+      Delta: Agents run-turn carries the user's short-lived iManage OBO token as a SECURED run
+      input in the request body. Never log the body; forward unchanged to Agent Service.
+    -->
+    <choose>
+      <when condition="@(context.Operation.Name == "run-turn")">
+        <set-variable name="noLogBody" value="true" />
+      </when>
+    </choose>
+  </inbound>
+
+  <backend>
+    <base /> <!-- generated AI Gateway backend: load-balanced pool + circuit breaker -->
+  </backend>
+
+  <outbound>
+    <base /> <!-- generated AI Gateway outbound: llm-emit-token-metric (token usage) +
+                  global.xml header strip. Token usage is already emitted; no manual parsing. -->
+  </outbound>
+
+  <on-error>
+    <base />
+  </on-error>
+</policies>

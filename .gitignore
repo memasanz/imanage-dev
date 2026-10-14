@@ -1,0 +1,44 @@
+# azd / Azure
+.azure/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+/src/backend/ui/
+
+# Bicep build output
+infra/**/*.json.tmp
+main.json
+*.bicepParameters.json
+
+# Local deployment, browser, and diagnostic artifacts
+.playwright-mcp/
+_weblogs/
+*.log
+/docs-pagination.png
+
+# Local presentation: review content and rights before explicitly publishing
+/docs/iManage-AI-Workspace.pptx
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
